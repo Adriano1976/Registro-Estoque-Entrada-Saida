@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        form input, form select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+        form button {
+            padding: 10px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        form button:hover {
+            background: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .export-btn, .print-btn {
+            margin-top: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .export-btn:hover, .print-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Registro de Entrada e Saída de Material de Construção</h2>
+
+    <form id="formulario">
+        <input type="text" id="descricao" placeholder="Descrição do Produto" required>
+        <input type="number" id="quantidade" placeholder="Quantidade" required>
+        <input type="text" id="fornecedor" placeholder="Fornecedor" required>
+        <select id="movimentacao">
+            <option value="Entrada">Entrada</option>
+            <option value="Saída">Saída</option>
+        </select>
+        <button type="submit">Adicionar</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Quantidade</th>
+                <th>Fornecedor</th>
+                <th>Movimentação</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaRegistros">
+        </tbody>
+    </table>
+
+    <button class="export-btn" onclick="exportarXLSX()">Exportar XLSX</button>
+    <button class="print-btn" onclick="imprimir()">Imprimir</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+    <script>
+        const formulario = document.getElementById('formulario');
+        const tabelaRegistros = document.getElementById('tabelaRegistros');
+        let registros = [];
+
+        formulario.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const data = new Date().toLocaleDateString('pt-BR');
+            const descricao = document.getElementById('descricao').value;
+            const quantidade = document.getElementById('quantidade').value;
+            const fornecedor = document.getElementById('fornecedor').value;
+            const movimentacao = document.getElementById('movimentacao').value;
+
+            const novoRegistro = {
+                data, descricao, quantidade, fornecedor, movimentacao
+            };
+
+            registros.push(novoRegistro);
+            atualizarTabela();
+            formulario.reset();
+        });
+
+        function atualizarTabela() {
+            tabelaRegistros.innerHTML = '';
+            registros.forEach((registro, index) => {
+                const linha = `
+                    <tr>
+                        <td>${registro.data}</td>
+                        <td>${registro.descricao}</td>
+                        <td>${registro.quantidade}</td>
+                        <td>${registro.fornecedor}</td>
+                        <td>${registro.movimentacao}</td>
+                    </tr>
+                `;
+                tabelaRegistros.innerHTML += linha;
+            });
+        }
+
+        function exportarXLSX() {
+            // Cria a estrutura para a planilha com os títulos devidamente formatados
+            const dados = registros.map(registro => ({
+                "Data": registro.data,
+                "Descrição": registro.descricao,
+                "Quantidade": registro.quantidade,
+                "Fornecedor": registro.fornecedor,
+                "Movimentação": registro.movimentacao
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Registro de Mercadorias');
+
+            // Gera o arquivo XLSX
+            XLSX.writeFile(wb, 'registro_mercadorias.xlsx');
+        }
+
+        function imprimir() {
+            // Cria uma janela para visualização da impressão
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Imprimir Registros</title><style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; }');
+            printWindow.document.write('table, th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }');
+            printWindow.document.write('th { background-color: #f2f2f2; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<h2>Registro de Entrada e Saída de Mercadorias</h2>');
+            printWindow.document.write('<table><thead><tr><th>Data</th><th>Descrição</th><th>Quantidade</th><th>Fornecedor</th><th>Movimentação</th></tr></thead><tbody>');
+            
+            registros.forEach((registro) => {
+                printWindow.document.write(`
+                    <tr>
+                        <td>${registro.data}</td>
+                        <td>${registro.descricao}</td>
+                        <td>${registro.quantidade}</td>
+                        <td>${registro.fornecedor}</td>
+                        <td>${registro.movimentacao}</td>
+                    </tr>
+                `);
+            });
+
+            printWindow.document.write('</tbody></table>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();  // Fecha o documento
+            printWindow.print();  // Inicia a impressão
+        }
+    </script>
+</body>
+</html>
